@@ -89,7 +89,7 @@ export const IDCardPreview = ({ card, templateId = 'modern', isLandscape = true,
 
   const renderQRCode = (size) => {
     if (qrCodeUrl) {
-      return <img src={qrCodeUrl} alt="QR Code" style={{ width: `${size}px`, height: `${size}px` }} className="object-contain" />;
+      return <img src={qrCodeUrl} alt="QR Code" style={{ width: `${size}px`, height: `${size}px` }} className="object-contain" crossOrigin="anonymous" />;
     }
     return <QRCodeSVG value={fullDetailsQR} size={size} level="M" />;
   };
@@ -132,7 +132,7 @@ export const IDCardPreview = ({ card, templateId = 'modern', isLandscape = true,
           <div className="text-right">
             <p className="text-[9px] text-slate-400 uppercase tracking-wider">Authorized Signature</p>
             {signatureUrl ? (
-              <img src={signatureUrl} alt="Signature" className="h-7 object-contain ml-auto mt-0.5" />
+              <img src={signatureUrl} alt="Signature" className="h-7 object-contain ml-auto mt-0.5" crossOrigin="anonymous" />
             ) : (
               <p className="font-serif italic text-slate-700 text-xs font-bold mt-1">Authorized Signatory</p>
             )}
@@ -157,7 +157,7 @@ export const IDCardPreview = ({ card, templateId = 'modern', isLandscape = true,
       >
         <div className="flex items-center gap-2.5 max-w-[80%]">
           {logoUrl ? (
-            <img src={logoUrl} alt="Logo" className="w-7 h-7 rounded-md object-contain bg-white/90 p-0.5 shrink-0" />
+            <img src={logoUrl} alt="Logo" className="w-7 h-7 rounded-md object-contain bg-white/90 p-0.5 shrink-0" crossOrigin="anonymous" />
           ) : (
             <div className="w-7 h-7 rounded-md bg-white/20 flex items-center justify-center text-white font-black text-xs shrink-0">
               {isStudent ? <GraduationCap className="w-4 h-4 text-white" /> : 'ID'}
@@ -182,6 +182,7 @@ export const IDCardPreview = ({ card, templateId = 'modern', isLandscape = true,
                 src={photoUrl}
                 alt={fullName}
                 className="w-full h-full object-contain object-top rounded-lg"
+                crossOrigin="anonymous"
               />
             </div>
             <span className="text-[9px] font-mono font-bold bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded-md max-w-[100px] truncate">
@@ -240,6 +241,7 @@ export const IDCardPreview = ({ card, templateId = 'modern', isLandscape = true,
               src={photoUrl}
               alt={fullName}
               className="w-full h-full object-contain object-top rounded-lg"
+              crossOrigin="anonymous"
             />
           </div>
 
@@ -275,7 +277,7 @@ export const IDCardPreview = ({ card, templateId = 'modern', isLandscape = true,
             <div className="text-right">
               <p className="text-[8px] text-slate-400 uppercase">Authorized</p>
               {signatureUrl ? (
-                <img src={signatureUrl} alt="Sig" className="h-6 object-contain ml-auto" />
+                <img src={signatureUrl} alt="Sig" className="h-6 object-contain ml-auto" crossOrigin="anonymous" />
               ) : (
                 <p className="font-serif italic text-xs font-bold text-slate-700">Authorized Signatory</p>
               )}

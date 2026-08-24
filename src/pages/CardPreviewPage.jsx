@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import confetti from 'canvas-confetti';
+import { toPng } from 'html-to-image';
 import html2canvas from 'html2canvas';
 import {
   Printer,
@@ -21,11 +22,112 @@ import { useCards } from '../context/CardContext';
 import { useToast } from '../context/ToastContext';
 import { TEMPLATES } from '../utils/theme';
 
+// Helper: Wait for document fonts and all image elements within container to be fully loaded
+const waitForAssetsToLoad = async (container) => {
+  if (document.fonts && document.fonts.ready) {
+    try {
+      await document.fonts.ready;
+    } catch (e) {
+      console.warn('[DOWNLOAD] Font loading wait warning:', e);
+    }
+  }
+
+  const images = Array.from(container.querySelectorAll('img'));
+  await Promise.all(
+    images.map(
+      (img) =>
+        new Promise((resolve) => {
+          if (img.complete && img.naturalWidth !== 0) {
+            resolve();
+            return;
+          }
+          const onDone = () => {
+            img.removeEventListener('load', onDone);
+            img.removeEventListener('error', onDone);
+            resolve();
+          };
+          img.addEventListener('load', onDone);
+          img.addEventListener('error', onDone);
+        })
+    )
+  );
+};
+
+// Helper: Safely inline cross-origin images to Data URLs to prevent canvas/SVG tainting
+const inlineCrossDomainImages = async (container) => {
+  const images = Array.from(container.querySelectorAll('img'));
+  const backups = [];
+
+  await Promise.all(
+    images.map(async (img) => {
+      const src = img.src;
+      if (!src || src.startsWith('data:')) return;
+
+      try {
+        // Method 1: Fetch as CORS blob & convert to Data URL via FileReader
+        const response = await fetch(src, { mode: 'cors' });
+        if (response.ok) {
+          const blob = await response.blob();
+          const dataUrl = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.onerror = () => resolve(null);
+            reader.readAsDataURL(blob);
+          });
+          if (dataUrl) {
+            backups.push({ img, originalSrc: src });
+            img.src = dataUrl;
+            return;
+          }
+        }
+      } catch (fetchErr) {
+        console.warn('[DOWNLOAD] Fetch image as blob failed, trying Image canvas fallback:', src, fetchErr);
+      }
+
+      // Method 2: Offscreen Image canvas drawing fallback
+      try {
+        const dataUrl = await new Promise((resolve) => {
+          const tempImg = new Image();
+          tempImg.crossOrigin = 'anonymous';
+          tempImg.onload = () => {
+            try {
+              const canvas = document.createElement('canvas');
+              canvas.width = tempImg.naturalWidth || 400;
+              canvas.height = tempImg.naturalHeight || 400;
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(tempImg, 0, 0);
+              resolve(canvas.toDataURL('image/png'));
+            } catch (canvasErr) {
+              resolve(null);
+            }
+          };
+          tempImg.onerror = () => resolve(null);
+          tempImg.src = src;
+        });
+
+        if (dataUrl) {
+          backups.push({ img, originalSrc: src });
+          img.src = dataUrl;
+        }
+      } catch (err) {
+        console.warn('[DOWNLOAD] Image data URL conversion skipped:', src, err);
+      }
+    })
+  );
+
+  return () => {
+    backups.forEach(({ img, originalSrc }) => {
+      img.src = originalSrc;
+    });
+  };
+};
+
 export const CardPreviewPage = () => {
   const navigate = useNavigate();
   const { activeCard, cards, incrementDownload, incrementPrint } = useCards();
   const { addToast } = useToast();
   const [isExporting, setIsExporting] = useState(false);
+  const cardRef = useRef(null);
 
   const card = activeCard || cards[0];
   const [selectedTemplate, setSelectedTemplate] = useState('modern');
@@ -39,36 +141,98 @@ export const CardPreviewPage = () => {
   };
 
   const handleDownload = async () => {
-    if (!card) return;
-    const cardElement = document.querySelector('.print-area');
+    console.log('[DOWNLOAD] Button clicked');
+    if (!card) {
+      console.warn('[DOWNLOAD] No card active');
+      return;
+    }
+
+    const cardElement = cardRef.current?.querySelector('.print-area') || document.querySelector('.print-area');
     if (!cardElement) {
+      console.error('[DOWNLOAD] Card element not found in DOM');
       addToast('ID Card element not ready for download', 'warning');
       return;
     }
 
+    console.log('[DOWNLOAD] Card element found', cardElement);
+    const rect = cardElement.getBoundingClientRect();
+    console.log('[DOWNLOAD] Card dimensions', { width: rect.width, height: rect.height });
+
     setIsExporting(true);
+    let restoreImages = null;
+    let createdObjectUrl = null;
+
     try {
       addToast('Generating high-resolution badge download...', 'info');
-      const canvas = await html2canvas(cardElement, {
-        scale: 3, // 300 DPI high-res output
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#FFFFFF'
-      });
+
+      console.log('[DOWNLOAD] Waiting for images');
+      await waitForAssetsToLoad(cardElement);
+
+      restoreImages = await inlineCrossDomainImages(cardElement);
+      console.log('[DOWNLOAD] Images loaded');
+
+      console.log('[DOWNLOAD] Starting capture');
+      let dataUrl = '';
+
+      try {
+        // Primary capture method: html-to-image
+        dataUrl = await toPng(cardElement, {
+          quality: 1.0,
+          pixelRatio: 3,
+          backgroundColor: '#FFFFFF',
+          fontEmbedCSS: ''
+        });
+      } catch (primaryErr) {
+        console.warn('[DOWNLOAD] Primary capture (html-to-image) failed, falling back to html2canvas:', primaryErr);
+        // Fallback capture method: html2canvas
+        const canvas = await html2canvas(cardElement, {
+          scale: 3,
+          useCORS: true,
+          allowTaint: false,
+          backgroundColor: '#FFFFFF',
+          logging: false
+        });
+        dataUrl = canvas.toDataURL('image/png');
+      }
+
+      console.log('[DOWNLOAD] Capture completed');
+
+      // Convert Data URL to Blob
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+      console.log('[DOWNLOAD] Blob created', { size: blob.size, type: blob.type });
+
+      createdObjectUrl = URL.createObjectURL(blob);
+
+      const empId = card.employeeId || card.rollNumber || card.id || 'BADGE';
+      const sanitizedEmpId = String(empId).trim().replace(/[^a-zA-Z0-9_-]/g, '_');
+      const filename = `ID-Card-${sanitizedEmpId}.png`;
 
       const link = document.createElement('a');
-      const nameSanitized = (card.fullName || 'ID_Card').replace(/[^a-zA-Z0-9]/g, '_');
-      link.download = `${nameSanitized}_ID_Badge.png`;
-      link.href = canvas.toDataURL('image/png');
+      link.style.display = 'none';
+      link.href = createdObjectUrl;
+      link.download = filename;
+
+      document.body.appendChild(link);
+      console.log('[DOWNLOAD] Download triggered', { filename });
       link.click();
+      document.body.removeChild(link);
 
       if (card) incrementDownload(card.id);
       confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 } });
-      addToast(`Downloaded high-res badge for ${card.fullName}!`, 'success');
+      addToast(`Downloaded high-res badge for ${card.fullName || 'Employee'}!`, 'success');
     } catch (err) {
-      console.error('Download error:', err);
-      addToast('Failed to generate image download', 'error');
+      console.error('[DOWNLOAD ERROR] Failed to generate ID card download:', err);
+      addToast(err?.message ? `Download error: ${err.message}` : 'Failed to generate image download', 'error');
     } finally {
+      if (restoreImages) {
+        restoreImages();
+      }
+      if (createdObjectUrl) {
+        setTimeout(() => {
+          URL.revokeObjectURL(createdObjectUrl);
+        }, 1000);
+      }
       setIsExporting(false);
     }
   };
@@ -150,12 +314,14 @@ export const CardPreviewPage = () => {
           </div>
 
           {/* Render Actual Card Component */}
-          <IDCardPreview
-            card={card}
-            templateId={selectedTemplate}
-            isLandscape={isLandscape}
-            showBack={showBack}
-          />
+          <div ref={cardRef}>
+            <IDCardPreview
+              card={card}
+              templateId={selectedTemplate}
+              isLandscape={isLandscape}
+              showBack={showBack}
+            />
+          </div>
 
           <p className="no-print text-xs text-slate-400 mt-4 flex items-center gap-1">
             <Sparkles className="w-3.5 h-3.5 text-blue-500" />

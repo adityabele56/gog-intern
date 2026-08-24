@@ -4,6 +4,7 @@ import {
   Search,
   Plus,
   Eye,
+  Edit,
   Trash2,
   Printer,
   Download,
@@ -162,39 +163,58 @@ export const MyCardsPage = () => {
         </div>
       </Card>
 
-      {/* Cards Grid */}
-      {paginatedCards.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Cards Display Grid */}
+      {loading ? (
+        <div className="p-12 flex flex-col items-center justify-center bg-white rounded-3xl border border-slate-200">
+          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-3" />
+          <p className="text-sm font-medium text-slate-500">Loading credentials from MongoDB...</p>
+        </div>
+      ) : paginatedCards.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {paginatedCards.map((card) => (
-            <Card key={card.id} hoverEffect className="flex flex-col justify-between group">
+            <Card
+              key={card.id}
+              className="p-5 flex flex-col justify-between hover:border-blue-300 transition-all duration-200 group"
+            >
               <div>
-                {/* Header Badge */}
-                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                  <Badge variant={card.cardType === 'Student' ? 'success' : 'primary'}>
-                    {card.cardType === 'Student' ? `Student: ${card.course || 'Academic'}` : (card.department || 'Employee')}
-                  </Badge>
-                  <span className="font-mono text-xs font-bold text-slate-500">
-                    {card.rollNumber || card.employeeId}
-                  </span>
-                </div>
-
-                {/* Profile Brief */}
-                <div className="flex items-center gap-4 my-4">
-                  <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-slate-100 shadow-sm bg-slate-100 p-0.5 shrink-0 flex items-center justify-center">
+                <div className="flex items-start justify-between gap-3 mb-4">
+                  <div className="flex items-center gap-3">
                     <img
                       src={card.photoUrl || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=400'}
                       alt={card.fullName}
-                      className="w-full h-full object-contain object-top rounded-xl"
+                      className="w-12 h-14 rounded-xl object-cover border border-slate-200 shadow-xs"
                     />
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900 line-clamp-1">
+                        {card.fullName}
+                      </h3>
+                      <p className="text-xs font-medium text-blue-600 line-clamp-1">
+                        {card.designation || card.branch || 'Member'}
+                      </p>
+                      <p className="text-[11px] font-mono font-semibold text-slate-400 mt-0.5">
+                        ID: {card.employeeId || card.rollNumber}
+                      </p>
+                    </div>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <h3 className="text-base font-extrabold text-slate-900 group-hover:text-blue-600 transition truncate">
-                      {card.fullName}
-                    </h3>
-                    <p className="text-xs font-semibold text-slate-500 mt-0.5 truncate">
-                      {card.designation || card.branch}
-                    </p>
-                    <p className="text-[11px] text-slate-400 mt-1 truncate">{card.companyName || card.college}</p>
+                  <Badge variant={card.cardType === 'Student' ? 'success' : 'primary'}>
+                    {card.cardType || 'Employee'}
+                  </Badge>
+                </div>
+
+                <div className="space-y-1.5 text-xs text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100 mb-4">
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Org / Dept:</span>
+                    <span className="font-medium text-slate-800 truncate max-w-[160px]">
+                      {card.companyName || card.department}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Contact Phone:</span>
+                    <span className="font-mono text-slate-700">{card.phone || 'N/A'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Issued On:</span>
+                    <span className="font-mono text-slate-700">{card.createdAt}</span>
                   </div>
                 </div>
               </div>
@@ -216,12 +236,22 @@ export const MyCardsPage = () => {
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => {
+                      setActiveCard(card);
+                      navigate('/dashboard/create', { state: { cardToEdit: card } });
+                    }}
+                    title="Edit"
+                    className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => {
                       incrementPrint(card.id);
                       setActiveCard(card);
                       navigate('/dashboard/preview');
                     }}
                     title="Print"
-                    className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition"
+                    className="p-2 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition"
                   >
                     <Printer className="w-4 h-4" />
                   </button>

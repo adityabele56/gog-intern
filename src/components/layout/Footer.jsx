@@ -32,11 +32,10 @@ export const Footer = () => {
               Product
             </h4>
             <ul className="flex flex-col gap-2.5 text-sm font-medium text-slate-600">
-              <li><Link to="/#features" className="hover:text-blue-600 transition">ID Card Templates</Link></li>
-              <li><Link to="/#features" className="hover:text-blue-600 transition">Batch Printing</Link></li>
-              <li><Link to="/#features" className="hover:text-blue-600 transition">Dynamic QR Security</Link></li>
-              <li><Link to="/#features" className="hover:text-blue-600 transition">API Integrations</Link></li>
-              <li><Link to="/#features" className="hover:text-blue-600 transition">Enterprise Security</Link></li>
+              <li><Link to="/features" className="hover:text-blue-600 transition">ID Card Features</Link></li>
+              <li><Link to="/features" className="hover:text-blue-600 transition">Batch Printing</Link></li>
+              <li><Link to="/features" className="hover:text-blue-600 transition">Dynamic QR Security</Link></li>
+              <li><Link to="/features" className="hover:text-blue-600 transition">Enterprise Security</Link></li>
             </ul>
           </div>
 
@@ -46,11 +45,9 @@ export const Footer = () => {
               Company
             </h4>
             <ul className="flex flex-col gap-2.5 text-sm font-medium text-slate-600">
-              <li><a href="#about" className="hover:text-blue-600 transition">About Us</a></li>
-              <li><a href="#testimonials" className="hover:text-blue-600 transition">Customer Stories</a></li>
-              <li><a href="#careers" className="hover:text-blue-600 transition">Careers</a></li>
-              <li><a href="#privacy" className="hover:text-blue-600 transition">Privacy Policy</a></li>
-              <li><a href="#terms" className="hover:text-blue-600 transition">Terms of Service</a></li>
+              <li><Link to="/about" className="hover:text-blue-600 transition">About Us</Link></li>
+              <li><Link to="/features" className="hover:text-blue-600 transition">Platform Overview</Link></li>
+              <li><Link to="/contact" className="hover:text-blue-600 transition">Contact Us</Link></li>
             </ul>
           </div>
 

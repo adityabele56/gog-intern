@@ -11,10 +11,10 @@ export const Navbar = () => {
   const { user } = useAuth();
 
   const navLinks = [
-    { label: 'Home', href: '/' },
-    { label: 'Features', href: '/#features' },
-    { label: 'About', href: '/#about' },
-    { label: 'Contact', href: '/#contact' }
+    { label: 'Home', path: '/' },
+    { label: 'Features', path: '/features' },
+    { label: 'About', path: '/about' },
+    { label: 'Contact', path: '/contact' }
   ];
 
   return (
@@ -38,15 +38,20 @@ export const Navbar = () => {
 
           {/* Desktop Nav Links */}
           <nav className="hidden md:flex items-center gap-8">
-            {navLinks.map((link) => (
-              <a
-                key={link.label}
-                href={link.href}
-                className="text-sm font-semibold text-slate-600 hover:text-blue-600 transition"
-              >
-                {link.label}
-              </a>
-            ))}
+            {navLinks.map((link) => {
+              const isActive = location.pathname === link.path;
+              return (
+                <Link
+                  key={link.label}
+                  to={link.path}
+                  className={`text-sm font-semibold transition ${
+                    isActive ? 'text-blue-600 font-bold' : 'text-slate-600 hover:text-blue-600'
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              );
+            })}
           </nav>
 
           {/* Action Buttons */}
@@ -95,16 +100,21 @@ export const Navbar = () => {
       {/* Mobile Drawer */}
       {isOpen && (
         <div className="md:hidden border-b border-slate-200 bg-white px-4 pt-2 pb-6 flex flex-col gap-3">
-          {navLinks.map((link) => (
-            <a
-              key={link.label}
-              href={link.href}
-              onClick={() => setIsOpen(false)}
-              className="px-3 py-2 rounded-xl text-base font-semibold text-slate-700 hover:bg-slate-50"
-            >
-              {link.label}
-            </a>
-          ))}
+          {navLinks.map((link) => {
+            const isActive = location.pathname === link.path;
+            return (
+              <Link
+                key={link.label}
+                to={link.path}
+                onClick={() => setIsOpen(false)}
+                className={`px-3 py-2 rounded-xl text-base font-semibold transition ${
+                  isActive ? 'bg-blue-50 text-blue-600' : 'text-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
           <div className="border-t border-slate-100 pt-3 flex flex-col gap-2 mt-2">
             {user?.isLoggedIn ? (
               <Button

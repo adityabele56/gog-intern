@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import {
   User,
@@ -26,55 +26,94 @@ import { DEPARTMENTS } from '../utils/theme';
 
 export const CreateCardPage = () => {
   const navigate = useNavigate();
-  const { addCard } = useCards();
+  const location = useLocation();
+  const { addCard, updateCard } = useCards();
   const { addToast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const cardToEdit = location.state?.cardToEdit;
+  const initialTemplate = location.state?.selectedTemplate || 'modern';
 
   const {
     register,
     handleSubmit,
     watch,
     setValue,
+    reset,
     trigger,
     formState: { errors }
   } = useForm({
     defaultValues: {
-      cardType: 'Employee',
-      fullName: '',
-      fatherName: '',
-      motherName: '',
-      dob: '',
-      gender: 'Male',
-      bloodGroup: 'O+',
-      phone: '',
-      email: '',
-      address: '',
-      city: '',
-      state: '',
-      pincode: '',
-      country: 'USA',
+      cardType: cardToEdit?.cardType || (cardToEdit?.college ? 'Student' : 'Employee'),
+      fullName: cardToEdit?.fullName || '',
+      fatherName: cardToEdit?.fatherName || '',
+      motherName: cardToEdit?.motherName || '',
+      dob: cardToEdit?.dob || '',
+      gender: cardToEdit?.gender || 'Male',
+      bloodGroup: cardToEdit?.bloodGroup || 'O+',
+      phone: cardToEdit?.phone || cardToEdit?.mobile || '',
+      email: cardToEdit?.email || '',
+      address: cardToEdit?.address || '',
+      city: cardToEdit?.city || '',
+      state: cardToEdit?.state || '',
+      pincode: cardToEdit?.pincode || '',
+      country: cardToEdit?.country || 'USA',
       // Employee
-      companyName: '',
-      department: 'Engineering',
-      designation: '',
-      employeeId: '',
-      joiningDate: '',
+      companyName: cardToEdit?.companyName || cardToEdit?.company || '',
+      department: cardToEdit?.department || 'Engineering',
+      designation: cardToEdit?.designation || '',
+      employeeId: cardToEdit?.employeeId || '',
+      joiningDate: cardToEdit?.joiningDate || '',
       // Student
-      college: '',
-      course: '',
-      branch: '',
-      semester: '',
-      rollNumber: '',
+      college: cardToEdit?.college || '',
+      course: cardToEdit?.course || '',
+      branch: cardToEdit?.branch || '',
+      semester: cardToEdit?.semester || '',
+      rollNumber: cardToEdit?.rollNumber || '',
       // Uploads
-      photoUrl: '',
+      photoUrl: cardToEdit?.photoUrl || '',
       photoFile: null,
-      signatureUrl: '',
+      signatureUrl: cardToEdit?.signatureUrl || '',
       signatureFile: null,
-      logoUrl: '',
+      logoUrl: cardToEdit?.logoUrl || '',
       logoFile: null
     }
   });
+
+  useEffect(() => {
+    if (cardToEdit) {
+      reset({
+        cardType: cardToEdit.cardType || (cardToEdit.college ? 'Student' : 'Employee'),
+        fullName: cardToEdit.fullName || '',
+        fatherName: cardToEdit.fatherName || '',
+        motherName: cardToEdit.motherName || '',
+        dob: cardToEdit.dob || '',
+        gender: cardToEdit.gender || 'Male',
+        bloodGroup: cardToEdit.bloodGroup || 'O+',
+        phone: cardToEdit.phone || cardToEdit.mobile || '',
+        email: cardToEdit.email || '',
+        address: cardToEdit.address || '',
+        city: cardToEdit.city || '',
+        state: cardToEdit.state || '',
+        pincode: cardToEdit.pincode || '',
+        country: cardToEdit.country || 'USA',
+        companyName: cardToEdit.companyName || cardToEdit.company || '',
+        department: cardToEdit.department || 'Engineering',
+        designation: cardToEdit.designation || '',
+        employeeId: cardToEdit.employeeId || '',
+        joiningDate: cardToEdit.joiningDate || '',
+        college: cardToEdit.college || '',
+        course: cardToEdit.course || '',
+        branch: cardToEdit.branch || '',
+        semester: cardToEdit.semester || '',
+        rollNumber: cardToEdit.rollNumber || '',
+        photoUrl: cardToEdit.photoUrl || '',
+        signatureUrl: cardToEdit.signatureUrl || '',
+        logoUrl: cardToEdit.logoUrl || ''
+      });
+    }
+  }, [cardToEdit, reset]);
 
   const formData = watch();
 
@@ -154,11 +193,17 @@ export const CreateCardPage = () => {
       if (data.signatureFile) payload.append('signature', data.signatureFile);
       if (data.logoFile) payload.append('companyLogo', data.logoFile);
 
-      await addCard(payload);
-      addToast(`ID Card created for ${data.fullName}!`, 'success');
+      if (cardToEdit && (cardToEdit.id || cardToEdit._id)) {
+        const cardId = cardToEdit.id || cardToEdit._id;
+        await updateCard(cardId, payload);
+        addToast(`Updated ID Card for ${data.fullName}!`, 'success');
+      } else {
+        await addCard(payload);
+        addToast(`Created ID Card for ${data.fullName}!`, 'success');
+      }
       navigate('/dashboard/preview');
     } catch (err) {
-      const msg = err.response?.data?.message || err.message || 'Failed to generate ID Card';
+      const msg = err.response?.data?.message || err.message || 'Failed to save ID Card';
       addToast(msg, 'error');
     } finally {
       setIsSubmitting(false);

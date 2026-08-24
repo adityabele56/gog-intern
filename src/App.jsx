@@ -6,6 +6,9 @@ import { ToastProvider } from './context/ToastContext';
 
 // Pages & Layouts
 import { LandingPage } from './pages/LandingPage';
+import { FeaturesPage } from './pages/FeaturesPage';
+import { AboutPage } from './pages/AboutPage';
+import { ContactPage } from './pages/ContactPage';
 import { SignupPage } from './pages/SignupPage';
 import { LoginPage } from './pages/LoginPage';
 import { DashboardLayout } from './components/layout/DashboardLayout';
@@ -15,6 +18,7 @@ import { CardPreviewPage } from './pages/CardPreviewPage';
 import { MyCardsPage } from './pages/MyCardsPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { SettingsPage } from './pages/SettingsPage';
+import { TemplatesPage } from './pages/TemplatesPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 
 const ProtectedRoute = ({ children }) => {
@@ -50,6 +54,9 @@ export function App() {
             <Routes>
               {/* Public Routes */}
               <Route path="/" element={<LandingPage />} />
+              <Route path="/features" element={<FeaturesPage />} />
+              <Route path="/about" element={<AboutPage />} />
+              <Route path="/contact" element={<ContactPage />} />
               <Route
                 path="/signup"
                 element={
@@ -80,7 +87,7 @@ export function App() {
                 <Route path="create" element={<CreateCardPage />} />
                 <Route path="preview" element={<CardPreviewPage />} />
                 <Route path="cards" element={<MyCardsPage />} />
-                <Route path="templates" element={<CardPreviewPage />} />
+                <Route path="templates" element={<TemplatesPage />} />
                 <Route path="profile" element={<ProfilePage />} />
                 <Route path="settings" element={<SettingsPage />} />
               </Route>
